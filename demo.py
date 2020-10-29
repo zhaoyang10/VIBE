@@ -44,6 +44,7 @@ from lib.utils.demo_utils import (
     video_to_images,
     images_to_video,
     download_ckpt,
+    render_joints3d
 )
 
 MIN_NUM_FRAMES = 25
@@ -267,6 +268,22 @@ def main(args):
         output_img_folder = f'{image_folder}_output'
         os.makedirs(output_img_folder, exist_ok=True)
 
+        if args.joints3dview:
+            output_img_raw_folder = f'{image_folder}_raw_output'
+            os.makedirs(output_img_raw_folder, exist_ok=True)
+
+            output_img_joints3d_folder = f'{image_folder}_joints3d_output'
+            os.makedirs(output_img_joints3d_folder, exist_ok=True)
+
+            output_img_mesh_folder = f'{image_folder}_mesh_output'
+            os.makedirs(output_img_mesh_folder, exist_ok=True)
+
+            output_img_meshside_folder = f'{image_folder}_meshside_output'
+            os.makedirs(output_img_meshside_folder, exist_ok=True)
+
+            output_img_all_folder = f'{image_folder}_all_output'
+            os.makedirs(output_img_all_folder, exist_ok=True)
+
         print(f'Rendering output video, writing frames to {output_img_folder}')
 
         # prepare results for rendering
@@ -289,6 +306,9 @@ def main(args):
             for person_id, person_data in frame_results[frame_idx].items():
                 frame_verts = person_data['verts']
                 frame_cam = person_data['cam']
+                joints3d = person_data['joints3d']
+                #print('frame_verts.shape = {}\nframe_cam.shape ={}\njoints3d.shape = {}'.format(
+                #   frame_verts.shape, frame_cam.shape, joints3d.shape))
 
                 mc = mesh_color[person_id]
 
@@ -298,6 +318,10 @@ def main(args):
                     mesh_folder = os.path.join(output_path, 'meshes', f'{person_id:04d}')
                     os.makedirs(mesh_folder, exist_ok=True)
                     mesh_filename = os.path.join(mesh_folder, f'{frame_idx:06d}.obj')
+
+                if args.joints3dview:
+                    img_raw = img.copy()
+                    img_joints3d = render_joints3d(joints3d, img_raw.shape)
 
                 img = renderer.render(
                     img,
@@ -317,10 +341,26 @@ def main(args):
                         axis=[0,1,0],
                     )
 
+
+
             if args.sideview:
+                img_mesh = img.copy()
                 img = np.concatenate([img, side_img], axis=1)
 
             cv2.imwrite(os.path.join(output_img_folder, f'{frame_idx:06d}.png'), img)
+
+            if args.joints3dview:
+                img_up = np.concatenate([img_raw, img_joints3d], axis=1)
+                img_down = np.concatenate([img_mesh, side_img], axis=1)
+                img_all = np.concatenate([img_up, img_down], axis=0)
+
+
+                cv2.imwrite(os.path.join(output_img_raw_folder, f'{frame_idx:06d}.png'), img_raw)
+                cv2.imwrite(os.path.join(output_img_joints3d_folder, f'{frame_idx:06d}.png'), img_joints3d)
+                cv2.imwrite(os.path.join(output_img_mesh_folder, f'{frame_idx:06d}.png'), img_mesh)
+                cv2.imwrite(os.path.join(output_img_meshside_folder, f'{frame_idx:06d}.png'), side_img)
+                cv2.imwrite(os.path.join(output_img_all_folder, f'{frame_idx:06d}.png'), img_all)
+
 
             if args.display:
                 cv2.imshow('Video', img)
@@ -337,6 +377,29 @@ def main(args):
         print(f'Saving result video to {save_name}')
         images_to_video(img_folder=output_img_folder, output_vid_file=save_name)
         shutil.rmtree(output_img_folder)
+
+        if args.joints3dview:
+            save_name_raw = f'{vid_name.replace(".mp4", "")}_raw.mp4'
+            images_to_video(img_folder=output_img_raw_folder, output_vid_file=save_name_raw)
+            shutil.rmtree(output_img_raw_folder)
+
+            save_name_joints3d = f'{vid_name.replace(".mp4", "")}_joints3d.mp4'
+            images_to_video(img_folder=output_img_joints3d_folder, output_vid_file=save_name_joints3d)
+            shutil.rmtree(output_img_joints3d_folder)
+
+            save_name_mesh = f'{vid_name.replace(".mp4", "")}_mesh.mp4'
+            images_to_video(img_folder=output_img_mesh_folder, output_vid_file=save_name_mesh)
+            shutil.rmtree(output_img_mesh_folder)
+
+            save_name_meshside = f'{vid_name.replace(".mp4", "")}_meshside.mp4'
+            images_to_video(img_folder=output_img_meshside_folder, output_vid_file=save_name_meshside)
+            shutil.rmtree(output_img_meshside_folder)
+
+            save_name_all = f'{vid_name.replace(".mp4", "")}_all.mp4'
+            images_to_video(img_folder=output_img_all_folder, output_vid_file=save_name_all)
+            shutil.rmtree(output_img_all_folder)
+
+
 
     shutil.rmtree(image_folder)
     print('================= END =================')
@@ -397,6 +460,9 @@ if __name__ == '__main__':
     parser.add_argument('--smooth_beta', type=float, default=0.7,
                         help='one euro filter beta. '
                              'Increasing the speed coefficient(beta) decreases speed lag.')
+
+    parser.add_argument('--joints3dview', action='store_true',
+                        help='render joints3d.')
 
     args = parser.parse_args()
 

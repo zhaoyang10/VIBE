@@ -30,6 +30,9 @@ from lib.data_utils.img_utils import get_single_image_crop_demo
 from lib.utils.geometry import rotation_matrix_to_angle_axis
 from lib.smplify.temporal_smplify import TemporalSMPLify
 
+import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
+
 
 def preprocess_video(video, joints2d, bboxes, frames, scale=1.0, crop_size=224):
     """
@@ -266,7 +269,9 @@ def prepare_rendering_results(vibe_results, nframes):
             frame_results[frame_id][person_id] = {
                 'verts': person_data['verts'][idx],
                 'cam': person_data['orig_cam'][idx],
+                'joints3d': person_data['joints3d'][idx]
             }
+
 
     # naive depth ordering based on the scale of the weak perspective camera
     for frame_id, frame_data in enumerate(frame_results):
@@ -277,3 +282,40 @@ def prepare_rendering_results(vibe_results, nframes):
         )
 
     return frame_results
+
+
+def render_joints3d(joints3d, shape):
+
+    plt.close('all')
+    fig = plt.figure()
+    ax = plt.subplot(projection='3d')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
+    radius_x = (max(joints3d[:, 0].reshape(-1)) - min(joints3d[:, 0].reshape(-1))) / 2
+    radius_y = (max(joints3d[:, 1].reshape(-1)) - min(joints3d[:, 1].reshape(-1))) / 2
+    radius_z = (max(joints3d[:, 2].reshape(-1)) - min(joints3d[:, 2].reshape(-1))) / 2
+    radius = max(max(radius_x, radius_y), radius_z)
+
+    center_x = (max(joints3d[:, 0].reshape(-1)) + min(joints3d[:, 0].reshape(-1))) / 2
+    center_y = (max(joints3d[:, 1].reshape(-1)) + min(joints3d[:, 1].reshape(-1))) / 2
+    center_z = (max(joints3d[:, 2].reshape(-1)) + min(joints3d[:, 2].reshape(-1))) / 2
+
+    ax.set_xlim3d([center_x - radius, center_x + radius])
+    ax.set_ylim3d([center_y - radius, center_y + radius])
+    ax.set_zlim3d([center_z - radius, center_z + radius])
+
+    #print('[{}, {}], [{}, {}], [{}, {}]'.format(center_x - radius, center_x + radius,
+    #                                            center_y - radius, center_y + radius,
+    #                                            center_z - radius, center_z + radius))
+    #ax.grid(False)
+    #plt.axis('off')
+    p = ax.scatter3D(-joints3d[:, 2], joints3d[:, 0], joints3d[:, 1], c='r', s=10, depthshade=False)
+    output = 'temp.png'
+    fig.savefig(output)
+    plt.close('all')
+    img = cv2.imread(output)
+    dim = (shape[1], shape[0])
+    img = cv2.resize(img, dim)
+    return img
