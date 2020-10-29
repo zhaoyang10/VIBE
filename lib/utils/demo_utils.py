@@ -311,7 +311,7 @@ def render_joints3d(joints3d, shape):
     #                                            center_z - radius, center_z + radius))
     #ax.grid(False)
     #plt.axis('off')
-    p = ax.scatter3D(-joints3d[:, 2], joints3d[:, 0], joints3d[:, 1], c='r', s=10, depthshade=False)
+    p = ax.scatter3D(-joints3d[:, 2], -joints3d[:, 0], -joints3d[:, 1], c='r', s=10, depthshade=False)
     output = 'temp.png'
     fig.savefig(output)
     plt.close('all')

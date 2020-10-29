@@ -380,22 +380,27 @@ def main(args):
 
         if args.joints3dview:
             save_name_raw = f'{vid_name.replace(".mp4", "")}_raw.mp4'
+            save_name_raw = os.path.join(output_path, save_name_raw)
             images_to_video(img_folder=output_img_raw_folder, output_vid_file=save_name_raw)
             shutil.rmtree(output_img_raw_folder)
 
             save_name_joints3d = f'{vid_name.replace(".mp4", "")}_joints3d.mp4'
+            save_name_joints3d = os.path.join(output_path, save_name_joints3d)
             images_to_video(img_folder=output_img_joints3d_folder, output_vid_file=save_name_joints3d)
             shutil.rmtree(output_img_joints3d_folder)
 
             save_name_mesh = f'{vid_name.replace(".mp4", "")}_mesh.mp4'
+            save_name_mesh = os.path.join(output_path, save_name_mesh)
             images_to_video(img_folder=output_img_mesh_folder, output_vid_file=save_name_mesh)
             shutil.rmtree(output_img_mesh_folder)
 
             save_name_meshside = f'{vid_name.replace(".mp4", "")}_meshside.mp4'
+            save_name_meshside = os.path.join(output_path, save_name_meshside)
             images_to_video(img_folder=output_img_meshside_folder, output_vid_file=save_name_meshside)
             shutil.rmtree(output_img_meshside_folder)
 
             save_name_all = f'{vid_name.replace(".mp4", "")}_all.mp4'
+            save_name_all = os.path.join(output_path, save_name_all)
             images_to_video(img_folder=output_img_all_folder, output_vid_file=save_name_all)
             shutil.rmtree(output_img_all_folder)
 
