@@ -296,12 +296,19 @@ def main(args):
             if x.endswith('.png') or x.endswith('.jpg')
         ])
 
-        for frame_idx in tqdm(range(len(image_file_names))):
+        length_image_files = len(image_file_names)
+        #length_image_files = 100
+        for frame_idx in tqdm(range(length_image_files)):
             img_fname = image_file_names[frame_idx]
             img = cv2.imread(img_fname)
 
             if args.sideview:
                 side_img = np.zeros_like(img)
+
+            if args.joints3dview:
+                img_raw = img.copy()
+                img_joints3d = np.zeros_like(img)
+                joints3d_list = []
 
             for person_id, person_data in frame_results[frame_idx].items():
                 frame_verts = person_data['verts']
@@ -309,8 +316,11 @@ def main(args):
                 joints3d = person_data['joints3d']
                 #print('frame_verts.shape = {}\nframe_cam.shape ={}\njoints3d.shape = {}'.format(
                 #   frame_verts.shape, frame_cam.shape, joints3d.shape))
-
                 mc = mesh_color[person_id]
+
+                if args.joints3dview:
+                    joints3d_list.append(joints3d)
+                #    img_joints3d = render_joints3d(joints3d, img_raw.shape)
 
                 mesh_filename = None
 
@@ -319,9 +329,6 @@ def main(args):
                     os.makedirs(mesh_folder, exist_ok=True)
                     mesh_filename = os.path.join(mesh_folder, f'{frame_idx:06d}.obj')
 
-                if args.joints3dview:
-                    img_raw = img.copy()
-                    img_joints3d = render_joints3d(joints3d, img_raw.shape)
 
                 img = renderer.render(
                     img,
@@ -348,6 +355,14 @@ def main(args):
                 img = np.concatenate([img, side_img], axis=1)
 
             cv2.imwrite(os.path.join(output_img_folder, f'{frame_idx:06d}.png'), img)
+
+            if args.joints3dview:
+                #img_joints3d = np.zeros_like(img_raw)
+                if len(joints3d_list) == 0:
+                    img_joints3d = np.zeros_like(img_raw)
+                else:
+                    joints3d = np.concatenate(joints3d_list)
+                    img_joints3d = render_joints3d(joints3d, img_raw.shape)
 
             if args.joints3dview:
                 img_up = np.concatenate([img_raw, img_joints3d], axis=1)
@@ -379,6 +394,7 @@ def main(args):
         shutil.rmtree(output_img_folder)
 
         if args.joints3dview:
+            '''
             save_name_raw = f'{vid_name.replace(".mp4", "")}_raw.mp4'
             save_name_raw = os.path.join(output_path, save_name_raw)
             images_to_video(img_folder=output_img_raw_folder, output_vid_file=save_name_raw)
@@ -398,7 +414,7 @@ def main(args):
             save_name_meshside = os.path.join(output_path, save_name_meshside)
             images_to_video(img_folder=output_img_meshside_folder, output_vid_file=save_name_meshside)
             shutil.rmtree(output_img_meshside_folder)
-
+            '''
             save_name_all = f'{vid_name.replace(".mp4", "")}_all.mp4'
             save_name_all = os.path.join(output_path, save_name_all)
             images_to_video(img_folder=output_img_all_folder, output_vid_file=save_name_all)

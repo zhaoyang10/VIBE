@@ -293,6 +293,7 @@ def render_joints3d(joints3d, shape):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
 
+    '''
     radius_x = (max(joints3d[:, 0].reshape(-1)) - min(joints3d[:, 0].reshape(-1))) / 2
     radius_y = (max(joints3d[:, 1].reshape(-1)) - min(joints3d[:, 1].reshape(-1))) / 2
     radius_z = (max(joints3d[:, 2].reshape(-1)) - min(joints3d[:, 2].reshape(-1))) / 2
@@ -305,17 +306,51 @@ def render_joints3d(joints3d, shape):
     ax.set_xlim3d([center_x - radius, center_x + radius])
     ax.set_ylim3d([center_y - radius, center_y + radius])
     ax.set_zlim3d([center_z - radius, center_z + radius])
+    '''
+    ax.set_xlim3d([-1, 1])
+    ax.set_ylim3d([-1, 1])
+    ax.set_zlim3d([-1, 1])
 
     #print('[{}, {}], [{}, {}], [{}, {}]'.format(center_x - radius, center_x + radius,
     #                                            center_y - radius, center_y + radius,
     #                                            center_z - radius, center_z + radius))
     #ax.grid(False)
     #plt.axis('off')
-    p = ax.scatter3D(-joints3d[:, 2], -joints3d[:, 0], -joints3d[:, 1], c='r', s=10, depthshade=False)
+    p = ax.scatter3D(-joints3d[:, 2], joints3d[:, 0], -joints3d[:, 1], c='r', s=10, depthshade=False)
+    '''
     output = 'temp.png'
     fig.savefig(output)
     plt.close('all')
     img = cv2.imread(output)
     dim = (shape[1], shape[0])
     img = cv2.resize(img, dim)
+    '''
+    img = fig2data(fig, shape[1], shape[0])
     return img
+
+
+def fig2data(fig, width, height):
+    """
+    fig = plt.figure()
+    image = fig2data(fig)
+    @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
+    @param fig a matplotlib figure
+    @return a numpy 3D array of RGBA values
+    """
+    import PIL.Image as Image
+    # draw the renderer
+    fig.canvas.draw()
+
+    # Get the RGBA buffer from the figure
+    w, h = fig.canvas.get_width_height()
+    buf = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8)
+    buf.shape = (w, h, 4)
+    # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
+    buf = np.roll(buf, 3, axis=2)
+
+    image = Image.frombytes("RGBA", (w, h), buf.tostring())
+    image = image.resize([width, height])
+    image = np.asarray(image)[:,:,:3]
+    #print('w = {}\th = {}\twidth = {}\theight = {}\timage.shape = {}'.format(w, h, width, height, image.shape))
+
+    return image
